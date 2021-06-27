@@ -10,7 +10,6 @@
 
 ## TODO
 
-- Consumer service
 - State service
 - Telemetry service
 - Query service (gRPC Server)

@@ -1,13 +1,21 @@
 package consumer
 
 import (
+	"encoding/json"
+	"strings"
+
 	"github.com/seb7887/janus/internal/config"
+	m "github.com/seb7887/janus/internal/msg"
+	"github.com/seb7887/janus/internal/st"
+	"github.com/seb7887/janus/internal/tm"
 	log "github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
 
 const (
-	consumer = "consumer"
+	consumer  = "consumer"
+	state     = "state"
+	telemetry = "telemetry"
 )
 
 func InitConsumer() error {
@@ -28,11 +36,11 @@ func InitConsumer() error {
 	// create queue
 	queue, err := ch.QueueDeclare(
 		consumer, // channel name
-		true, // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil, // arguments
+		true,     // durable
+		false,    // delete when unused
+		false,    // exclusive
+		false,    // no-wait
+		nil,      // arguments
 	)
 	if err != nil {
 		log.Fatalf("ERROR: fail to create a queue %s", err.Error())
@@ -42,12 +50,12 @@ func InitConsumer() error {
 	// channel
 	msgChannel, err := ch.Consume(
 		queue.Name, // queue
-		"", // consumer
-		false, // auto-ack
-		false, // exclusive
-		false, // no-local
-		false, // no-wait
-		nil, // arguments
+		"",         // consumer
+		false,      // auto-ack
+		false,      // exclusive
+		false,      // no-local
+		false,      // no-wait
+		nil,        // arguments
 	)
 	if err != nil {
 		log.Fatalf("ERROR: fail to create a message channel %s", err.Error())
@@ -58,7 +66,14 @@ func InitConsumer() error {
 	for {
 		select {
 		case msg := <-msgChannel:
-			log.Infof("received msg: %s", msg.Body)
+			log.Debugf("received msg: %s", msg.Body)
+
+			// parse message
+			var parsedMsg m.Msg
+			err = json.Unmarshal(msg.Body, &parsedMsg)
+			if err != nil {
+				log.Errorf("fail to parse message %s", err.Error())
+			}
 
 			// ack for message
 			err = msg.Ack(true)
@@ -66,6 +81,19 @@ func InitConsumer() error {
 				log.Errorf("fail to ack: %s", err.Error())
 				return err
 			}
+
+			// handle message
+			handleMsg(&parsedMsg)
 		}
+	}
+}
+
+func handleMsg(msg *m.Msg) {
+	log.Infof("TOPIC %s", msg.Topic)
+
+	if strings.Contains(msg.Topic, state) {
+		st.ProcessStateMsg(msg)
+	} else if strings.Contains(msg.Topic, telemetry) {
+		tm.ProcessTelemetryMsg(msg)
 	}
 }
