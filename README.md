@@ -10,11 +10,10 @@
 
 ## TODO
 
-- Clean architecture
-- Consumer processor
-- State processor
-- Telemetry processor
-- Query Service (gRPC Server)
+- Consumer service
+- State service
+- Telemetry service
+- Query service (gRPC Server)
 - Dockerize
 - CI/CD
 - Docs
