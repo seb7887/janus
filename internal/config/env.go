@@ -23,7 +23,11 @@ type Configuration struct {
 	APIKey     string `env:"API_KEY" default:"" json:"apiKey"`
 	MongoHost  string `env:"MONGO_HOST" default:"" json:"mongoHost"`
 	MongoPort  int    `env:"MONGO_PORT" default:"27017" json:"mongoPort"`
-	// TODO: timescaledb env vars
+	TSHost     string `env:"TIMESCALE_HOST" default:"127.0.0.1" json:"tsHost"`
+	TSPort     int    `env:"TIMESCALE_PORT" default:"5432" json:"tsPort"`
+	TSDatabase string `env:"TIMESCALE_DATABASE" default:"janus" json:"tsDatabase"`
+	TSUser     string `env:"TIMESCALE_USER" default:"postgres" json:"tsUser"`
+	TSPassword string `env:"TIMESCALE_PASSWORD" default:"" json:"tsPassword"`
 }
 
 var _config *Configuration

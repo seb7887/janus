@@ -10,7 +10,6 @@
 
 ## TODO
 
-- Telemetry service
 - Query service (gRPC Server)
 - Dockerize
 - CI/CD

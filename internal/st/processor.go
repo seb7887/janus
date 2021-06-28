@@ -24,7 +24,7 @@ func StartStateListener() error {
 			var payload m.StateMsg
 			err := json.Unmarshal([]byte(msg.Payload), &payload)
 			if err != nil {
-				log.Errorf("error parsing state payload %s")
+				log.Errorf("error parsing state payload %s", err.Error())
 			}
 
 			if payload.DeviceType == meter {

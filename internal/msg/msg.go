@@ -1,7 +1,10 @@
 package msg
 
 import (
+	"time"
+
 	"github.com/seb7887/janus/internal/storage/mongodb"
+	ts "github.com/seb7887/janus/internal/storage/timescaledb"
 )
 
 type Msg struct {
@@ -46,5 +49,37 @@ func GetGeneratorState(id string, state *StateMsg) mongodb.Generator {
 		Enabled:         state.Enabled,
 		NeedManteinance: state.NeedManteinance,
 		LastManteinance: state.LastManteinance,
+	}
+}
+
+type TelemetryMsg struct {
+	DeviceType  string
+	MsgType     string
+	Power       int64
+	Voltage     int64
+	Current     int64
+	Temperature int64
+	Subject     string
+	Message     string
+}
+
+func GetTelemetryMsg(id string, msg *TelemetryMsg, millis int64) ts.Telemetry {
+	return ts.Telemetry{
+		DeviceId:    id,
+		DeviceType:  msg.DeviceType,
+		Power:       msg.Power,
+		Voltage:     msg.Voltage,
+		Current:     msg.Current,
+		Temperature: msg.Temperature,
+		Timestamp:   time.Unix(0, millis*int64(time.Millisecond)),
+	}
+}
+
+func GetLogMsg(id string, msg *TelemetryMsg, millis int64) ts.Log {
+	return ts.Log{
+		DeviceId:  id,
+		Subject:   msg.Subject,
+		Message:   msg.Message,
+		Timestamp: time.Unix(0, millis*int64(time.Millisecond)),
 	}
 }

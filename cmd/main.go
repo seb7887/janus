@@ -8,6 +8,7 @@ import (
 	"github.com/seb7887/janus/internal/consumer"
 	"github.com/seb7887/janus/internal/server"
 	"github.com/seb7887/janus/internal/st"
+	ts "github.com/seb7887/janus/internal/storage/timescaledb"
 	"github.com/seb7887/janus/internal/tm"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -23,6 +24,10 @@ func main() {
 	defer cancel()
 
 	g, ctx := errgroup.WithContext(ctx)
+
+	// Initialize TimescaleDB
+	ts.InitTimescaleDB()
+	ts.AutoMigrate()
 
 	// Healthcheck service
 	g.Go(func() error {
