@@ -89,8 +89,6 @@ func InitConsumer() error {
 }
 
 func handleMsg(msg *m.Msg) {
-	log.Infof("TOPIC %s", msg.Topic)
-
 	if strings.Contains(msg.Topic, state) {
 		st.ProcessStateMsg(msg)
 	} else if strings.Contains(msg.Topic, telemetry) {

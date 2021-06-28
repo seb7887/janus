@@ -21,7 +21,8 @@ type Configuration struct {
 	GRPCPort   int    `env:"GRPC_PORT" default:"9001" json:"grpcPort"`
 	AMQPUrl    string `env:"AMQP_URL" json:"amqpUrl"`
 	APIKey     string `env:"API_KEY" default:"" json:"apiKey"`
-	// TODO: mongodb env vars
+	MongoHost  string `env:"MONGO_HOST" default:"" json:"mongoHost"`
+	MongoPort  int    `env:"MONGO_PORT" default:"27017" json:"mongoPort"`
 	// TODO: timescaledb env vars
 }
 

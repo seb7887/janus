@@ -10,7 +10,6 @@
 
 ## TODO
 
-- State service
 - Telemetry service
 - Query service (gRPC Server)
 - Dockerize
