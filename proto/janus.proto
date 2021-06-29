@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package janusrpc;
+
+message SingleStateRequest {
+  string deviceId = 1;
+}
+
+message MultipleStateRequest {
+  string nodeId = 1;
+}
+
+message StateResponse {
+  string deviceId = 1;
+  string nodeId = 2;
+  int64 temperature = 3;
+  int64 consumption = 4;
+  int64 energyConsumed = 5;
+  int64 lastReport = 6;
+  bool conected = 7;
+  int64 energyGenerated = 8;
+  bool enabled = 9;
+  bool needManteinance = 10;
+  int64 lastManteinance = 11;
+}
+
+message MultipleStateResponse {
+  repeated StateResponse states = 1;
+}
+
+service JanusService {
+  rpc GetState(SingleStateRequest) returns (StateResponse) {}
+  rpc StreamState(SingleStateRequest) returns (stream StateResponse) {}
+  rpc GetNodeStates(MultipleStateRequest) returns (MultipleStateResponse) {}
+}

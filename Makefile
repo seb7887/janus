@@ -5,12 +5,15 @@ GO = go
 Q = $(if $(filter 1,$V),,@)
 M = $(shell printf "\033[34;1m▶\033[0m")
 
+PROTO_FILES_PATH=proto
+PROTO_OUT=janusrpc
+
 $(BIN):
 	@mkdir -p $@
 
 .PHONY: gprc
 grpc: 
-				protoc -I . ./proto/janus/janus.proto --go_out=plugins=grpc:.
+				protoc -I $(PROTO_FILES_PATH) --go_out=plugins=grpc:$(PROTO_OUT) $(PROTO_FILES_PATH)/*.proto
 
 .PHONY: all
 all: fmt $(BIN) ; $(info $(M) building executable) @ ## Build program binary
