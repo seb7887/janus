@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/seb7887/janus/internal/config"
 	m "github.com/seb7887/janus/internal/msg"
+	"github.com/seb7887/janus/internal/pool"
 	"github.com/seb7887/janus/internal/st"
 	"github.com/seb7887/janus/internal/tm"
 	log "github.com/sirupsen/logrus"
@@ -13,12 +15,27 @@ import (
 )
 
 const (
-	consumer  = "consumer"
-	state     = "state"
-	telemetry = "telemetry"
+	consumerCh = "consumer"
+	state      = "state"
+	telemetry  = "telemetry"
 )
 
-func InitConsumer() error {
+type Consumer interface {
+	InitConsumer() error
+	SubmitWork(*m.Msg)
+}
+
+type consumer struct {
+	wpool *pool.WorkerPool
+}
+
+func New() Consumer {
+	return &consumer{
+		wpool: pool.New(config.GetConfig().NumOfWorkers),
+	}
+}
+
+func (c *consumer) InitConsumer() error {
 	// conn
 	conn, err := amqp.Dial(config.GetConfig().AMQPUrl)
 	if err != nil {
@@ -35,12 +52,12 @@ func InitConsumer() error {
 
 	// create queue
 	queue, err := ch.QueueDeclare(
-		consumer, // channel name
-		true,     // durable
-		false,    // delete when unused
-		false,    // exclusive
-		false,    // no-wait
-		nil,      // arguments
+		consumerCh, // channel name
+		true,       // durable
+		false,      // delete when unused
+		false,      // exclusive
+		false,      // no-wait
+		nil,        // arguments
 	)
 	if err != nil {
 		log.Fatalf("ERROR: fail to create a queue %s", err.Error())
@@ -83,9 +100,26 @@ func InitConsumer() error {
 			}
 
 			// handle message
-			handleMsg(&parsedMsg)
+			c.SubmitWork(&parsedMsg)
 		}
 	}
+}
+
+func (c *consumer) SubmitWork(msg *m.Msg) {
+	if c.wpool != nil {
+		c.wpool = pool.New(config.GetConfig().NumOfWorkers)
+	}
+
+	uuidWithHypen := uuid.New()
+	uuid := strings.Replace(uuidWithHypen.String(), "-", "", -1)
+
+	c.wpool.Submit(uuid, func() {
+		if strings.Contains(msg.Topic, state) {
+			st.ProcessStateMsg(msg)
+		} else if strings.Contains(msg.Topic, telemetry) {
+			tm.ProcessTelemetryMsg(msg)
+		}
+	})
 }
 
 func handleMsg(msg *m.Msg) {

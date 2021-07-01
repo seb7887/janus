@@ -5,6 +5,7 @@ import (
 	"net"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/seb7887/janus/internal/query"
 	"github.com/seb7887/janus/internal/server/grpc/interceptor"
 	"github.com/seb7887/janus/janusrpc"
 	"google.golang.org/grpc"
@@ -15,12 +16,14 @@ type GRPCServer interface {
 }
 
 type grpcServer struct {
-	grpcAddr string
+	grpcAddr     string
+	stateService query.QueryServiceState
 }
 
-func New(addr string) GRPCServer {
+func New(addr string, stateService query.QueryServiceState) GRPCServer {
 	return &grpcServer{
-		grpcAddr: addr,
+		grpcAddr:     addr,
+		stateService: stateService,
 	}
 }
 
@@ -31,7 +34,7 @@ func (s *grpcServer) Serve(ctx context.Context) error {
 	}
 
 	grpcServer := grpc.NewServer(withUnaryInterceptor())
-	serviceServer := NewJanusGRPCServer()
+	serviceServer := NewJanusGRPCServer(s.stateService)
 
 	janusrpc.RegisterJanusServiceServer(grpcServer, serviceServer)
 

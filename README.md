@@ -17,11 +17,6 @@
 
 ## Query Types
 
-- StateQuery
-  - deviceId
-- StateQuerySubscription
-- StatesQuery -> can filter by node
-  - nodeId
 - TimelineQuery
   - filter
     - type string
@@ -54,12 +49,6 @@
 
 ## Response Types
 
-- StateQueryResponse
-  - meter & generator
-- StatesQueryResponse
-  - meter & generator []
-- StateQueryStreamResponse
-  - meter & generator
 - TimelineQueryResponse
   - items map[string]object
   - name

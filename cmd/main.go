@@ -6,11 +6,10 @@ import (
 
 	"github.com/seb7887/janus/internal/config"
 	"github.com/seb7887/janus/internal/consumer"
+	"github.com/seb7887/janus/internal/query"
 	"github.com/seb7887/janus/internal/server"
 	"github.com/seb7887/janus/internal/server/grpc"
-	"github.com/seb7887/janus/internal/st"
 	ts "github.com/seb7887/janus/internal/storage/timescaledb"
-	"github.com/seb7887/janus/internal/tm"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 )
@@ -21,6 +20,8 @@ func main() {
 		httpAddr = fmt.Sprintf(":%d", httpPort)
 		grpcPort = config.GetConfig().GRPCPort
 		grpcAddr = fmt.Sprintf(":%d", grpcPort)
+
+		qsState = query.NewQueryStateService()
 	)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -41,24 +42,15 @@ func main() {
 
 	// Query service
 	g.Go(func() error {
-		srv := grpc.New(grpcAddr)
+		srv := grpc.New(grpcAddr, qsState)
 		log.Infof("gRPC server running at %s", grpcAddr)
 		return srv.Serve(ctx)
 	})
 
 	// Consumer service
 	g.Go(func() error {
-		return consumer.InitConsumer()
-	})
-
-	// State service
-	g.Go(func() error {
-		return st.StartStateListener()
-	})
-
-	// Telemetry service
-	g.Go(func() error {
-		return tm.StartTelemetryListener()
+		c := consumer.New()
+		return c.InitConsumer()
 	})
 
 	log.Fatal(g.Wait())

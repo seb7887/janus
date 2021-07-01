@@ -4,6 +4,7 @@ package janusrpc;
 
 message SingleStateRequest {
   string deviceId = 1;
+  string deviceType = 2;
 }
 
 message MultipleStateRequest {

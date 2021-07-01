@@ -17,17 +17,18 @@ type RouteInfo struct {
 }
 
 type Configuration struct {
-	HealthPort int    `env:"HEALTH_PORT" default:"9000" json:"healthPort"`
-	GRPCPort   int    `env:"GRPC_PORT" default:"9001" json:"grpcPort"`
-	AMQPUrl    string `env:"AMQP_URL" json:"amqpUrl"`
-	APIKey     string `env:"API_KEY" default:"" json:"apiKey"`
-	MongoHost  string `env:"MONGO_HOST" default:"" json:"mongoHost"`
-	MongoPort  int    `env:"MONGO_PORT" default:"27017" json:"mongoPort"`
-	TSHost     string `env:"TIMESCALE_HOST" default:"127.0.0.1" json:"tsHost"`
-	TSPort     int    `env:"TIMESCALE_PORT" default:"5432" json:"tsPort"`
-	TSDatabase string `env:"TIMESCALE_DATABASE" default:"janus" json:"tsDatabase"`
-	TSUser     string `env:"TIMESCALE_USER" default:"postgres" json:"tsUser"`
-	TSPassword string `env:"TIMESCALE_PASSWORD" default:"" json:"tsPassword"`
+	HealthPort   int    `env:"HEALTH_PORT" default:"9000" json:"healthPort"`
+	GRPCPort     int    `env:"GRPC_PORT" default:"9001" json:"grpcPort"`
+	AMQPUrl      string `env:"AMQP_URL" json:"amqpUrl"`
+	APIKey       string `env:"API_KEY" default:"" json:"apiKey"`
+	MongoHost    string `env:"MONGO_HOST" default:"" json:"mongoHost"`
+	MongoPort    int    `env:"MONGO_PORT" default:"27017" json:"mongoPort"`
+	TSHost       string `env:"TIMESCALE_HOST" default:"127.0.0.1" json:"tsHost"`
+	TSPort       int    `env:"TIMESCALE_PORT" default:"5432" json:"tsPort"`
+	TSDatabase   string `env:"TIMESCALE_DATABASE" default:"janus" json:"tsDatabase"`
+	TSUser       string `env:"TIMESCALE_USER" default:"postgres" json:"tsUser"`
+	TSPassword   string `env:"TIMESCALE_PASSWORD" default:"" json:"tsPassword"`
+	NumOfWorkers int    `env:"WORKER_NUM" default:"1024" json:"numOfWorkers"`
 }
 
 var _config *Configuration

@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const (
@@ -53,4 +54,57 @@ func UpsertGenerator(generator Generator) error {
 	}
 
 	return nil
+}
+
+func GetGenerator(id string) (*Generator, error) {
+	client, err := GetMongoClient()
+	if err != nil {
+		return nil, err
+	}
+
+	collection := client.Database(DB).Collection(generatorColl)
+
+	var res *Generator
+
+	filter := bson.D{primitive.E{Key: "device_id", Value: id}}
+	err = collection.FindOne(context.TODO(), filter).Decode(&res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func GetNodeGenerators(nodeId string) ([]*Generator, error) {
+	client, err := GetMongoClient()
+	if err != nil {
+		return nil, err
+	}
+
+	collection := client.Database(DB).Collection(generatorColl)
+
+	var res []*Generator
+
+	filter := bson.D{primitive.E{Key: "node_id", Value: nodeId}}
+	cur, err := collection.Find(context.TODO(), filter, &options.FindOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for cur.Next(context.TODO()) {
+		var g Generator
+		err = cur.Decode(&g)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, &g)
+	}
+
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
+
+	cur.Close(context.TODO())
+
+	return res, nil
 }

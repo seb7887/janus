@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	m "github.com/seb7887/janus/internal/msg"
+	"github.com/seb7887/janus/internal/query"
 	"github.com/seb7887/janus/internal/storage/mongodb"
 	log "github.com/sirupsen/logrus"
 )
@@ -13,33 +14,31 @@ const (
 	generator = "generator"
 )
 
-// channel to receive state messages
-var schan = make(chan m.Msg, 10)
+func ProcessStateMsg(msg *m.Msg) {
+	log.Debugf("state msg %s", msg)
+	var payload m.StateMsg
+	err := json.Unmarshal([]byte(msg.Payload), &payload)
+	if err != nil {
+		log.Errorf("error parsing state payload %s", err.Error())
+	}
 
-func StartStateListener() error {
-	for {
-		select {
-		case msg := <-schan:
-			log.Debugf("state msg %s", msg)
-			var payload m.StateMsg
-			err := json.Unmarshal([]byte(msg.Payload), &payload)
-			if err != nil {
-				log.Errorf("error parsing state payload %s", err.Error())
-			}
-
-			if payload.DeviceType == meter {
-				doc := m.GetMeterState(msg.ClientId, &payload)
-				err = mongodb.UpsertMeter(doc)
-			} else if payload.DeviceType == generator {
-				doc := m.GetGeneratorState(msg.ClientId, &payload)
-				err = mongodb.UpsertGenerator(doc)
-			}
-
-			return err
+	if payload.DeviceType == meter {
+		doc := m.GetMeterState(msg.ClientId, &payload)
+		err = mongodb.UpsertMeter(doc)
+		if err == nil {
+			// Stream new state to subscribers
+			query.StreamState(&query.StreamChMsg{MeterState: doc})
+		}
+	} else if payload.DeviceType == generator {
+		doc := m.GetGeneratorState(msg.ClientId, &payload)
+		err = mongodb.UpsertGenerator(doc)
+		if err == nil {
+			// Stream new state to subscribers
+			query.StreamState(&query.StreamChMsg{GeneratorState: doc})
 		}
 	}
-}
 
-func ProcessStateMsg(msg *m.Msg) {
-	schan <- *msg
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
