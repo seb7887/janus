@@ -61,9 +61,10 @@ type TelemetryMsg struct {
 	Temperature int64
 	Subject     string
 	Message     string
+	Timestamp   int64
 }
 
-func GetTelemetryMsg(id string, msg *TelemetryMsg, millis int64) ts.Telemetry {
+func GetTelemetryMsg(id string, msg *TelemetryMsg) ts.Telemetry {
 	return ts.Telemetry{
 		DeviceId:    id,
 		DeviceType:  msg.DeviceType,
@@ -71,15 +72,15 @@ func GetTelemetryMsg(id string, msg *TelemetryMsg, millis int64) ts.Telemetry {
 		Voltage:     msg.Voltage,
 		Current:     msg.Current,
 		Temperature: msg.Temperature,
-		Timestamp:   time.Unix(0, millis*int64(time.Millisecond)),
+		Timestamp:   time.Unix(0, msg.Timestamp*int64(time.Millisecond)),
 	}
 }
 
-func GetLogMsg(id string, msg *TelemetryMsg, millis int64) ts.Log {
+func GetLogMsg(id string, msg *TelemetryMsg) ts.Log {
 	return ts.Log{
 		DeviceId:  id,
 		Subject:   msg.Subject,
 		Message:   msg.Message,
-		Timestamp: time.Unix(0, millis*int64(time.Millisecond)),
+		Timestamp: time.Unix(0, msg.Timestamp*int64(time.Millisecond)),
 	}
 }

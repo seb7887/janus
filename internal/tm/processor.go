@@ -22,10 +22,10 @@ func ProcessTelemetryMsg(msg *m.Msg) {
 	}
 
 	if payload.MsgType == telemetryMsg {
-		tmRow := m.GetTelemetryMsg(msg.ClientId, &payload, msg.Timestamp)
+		tmRow := m.GetTelemetryMsg(msg.ClientId, &payload)
 		err = ts.InsertTelemetryEntry(&tmRow)
 	} else if payload.MsgType == logMsg {
-		logRow := m.GetLogMsg(msg.ClientId, &payload, msg.Timestamp)
+		logRow := m.GetLogMsg(msg.ClientId, &payload)
 		err = ts.InsertLogEntry(&logRow)
 	}
 }
