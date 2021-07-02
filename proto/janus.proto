@@ -29,8 +29,41 @@ message MultipleStateResponse {
   repeated StateResponse states = 1;
 }
 
+message Filter {
+  string type = 1;
+  string dimension = 2;
+  string value = 3;
+  string lower = 4;
+  string upper = 5;
+  repeated Filter fields = 6;
+}
+
+message Aggregation {
+  string type = 1;
+  string name = 2;
+  string field = 3;
+}
+
+message TimelineQuery {
+  Filter filter = 1;
+  string granularity = 2;
+  Filter interval = 3;
+  repeated Aggregation aggregations = 4;
+}
+
+message TimelineItem {
+  string name = 1;
+  int64 count = 2;
+}
+
+message TimelineQueryResponse {
+  repeated TimelineItem items = 1;
+  int64 total = 2;
+}
+
 service JanusService {
   rpc GetState(SingleStateRequest) returns (StateResponse) {}
   rpc StreamState(SingleStateRequest) returns (stream StateResponse) {}
   rpc GetNodeStates(MultipleStateRequest) returns (MultipleStateResponse) {}
+  rpc GetTelemetryTimeline(TimelineQuery) returns (TimelineQueryResponse) {}
 }
