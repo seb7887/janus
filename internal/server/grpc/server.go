@@ -16,14 +16,16 @@ type GRPCServer interface {
 }
 
 type grpcServer struct {
-	grpcAddr     string
-	stateService query.QueryServiceState
+	grpcAddr         string
+	stateService     query.QueryServiceState
+	telemetryService query.QueryServiceTelemetry
 }
 
-func New(addr string, stateService query.QueryServiceState) GRPCServer {
+func New(addr string, stateService query.QueryServiceState, telemetryService query.QueryServiceTelemetry) GRPCServer {
 	return &grpcServer{
-		grpcAddr:     addr,
-		stateService: stateService,
+		grpcAddr:         addr,
+		stateService:     stateService,
+		telemetryService: telemetryService,
 	}
 }
 
@@ -34,7 +36,7 @@ func (s *grpcServer) Serve(ctx context.Context) error {
 	}
 
 	grpcServer := grpc.NewServer(withUnaryInterceptor())
-	serviceServer := NewJanusGRPCServer(s.stateService)
+	serviceServer := NewJanusGRPCServer(s.stateService, s.telemetryService)
 
 	janusrpc.RegisterJanusServiceServer(grpcServer, serviceServer)
 

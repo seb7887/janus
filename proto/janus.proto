@@ -44,11 +44,18 @@ message Aggregation {
   string field = 3;
 }
 
+message OrderBy {
+  string dimension = 1;
+  string direction = 2;
+}
+
 message TimelineQuery {
   Filter filter = 1;
   string granularity = 2;
-  Filter interval = 3;
-  repeated Aggregation aggregations = 4;
+  string interval = 3;
+  repeated string dimension = 4;
+  repeated Aggregation aggregations = 5;
+  OrderBy orderBy = 6;
 }
 
 message TimelineItem {
@@ -56,8 +63,13 @@ message TimelineItem {
   int64 count = 2;
 }
 
+message TimelineResponse {
+  string dimension = 1;
+  repeated TimelineItem items = 2;
+}
+
 message TimelineQueryResponse {
-  repeated TimelineItem items = 1;
+  repeated TimelineResponse result = 1;
   int64 total = 2;
 }
 

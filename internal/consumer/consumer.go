@@ -121,11 +121,3 @@ func (c *consumer) SubmitWork(msg *m.Msg) {
 		}
 	})
 }
-
-func handleMsg(msg *m.Msg) {
-	if strings.Contains(msg.Topic, state) {
-		st.ProcessStateMsg(msg)
-	} else if strings.Contains(msg.Topic, telemetry) {
-		tm.ProcessTelemetryMsg(msg)
-	}
-}

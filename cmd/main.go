@@ -21,7 +21,8 @@ func main() {
 		grpcPort = config.GetConfig().GRPCPort
 		grpcAddr = fmt.Sprintf(":%d", grpcPort)
 
-		qsState = query.NewQueryStateService()
+		qsState     = query.NewQueryStateService()
+		qsTelemetry = query.NewQueryServiceTelemetry()
 	)
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -42,7 +43,7 @@ func main() {
 
 	// Query service
 	g.Go(func() error {
-		srv := grpc.New(grpcAddr, qsState)
+		srv := grpc.New(grpcAddr, qsState, qsTelemetry)
 		log.Infof("gRPC server running at %s", grpcAddr)
 		return srv.Serve(ctx)
 	})
