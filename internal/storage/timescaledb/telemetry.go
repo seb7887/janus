@@ -74,6 +74,9 @@ func ExecuteTMTimelineQuery(sql string, numOfDims int) ([]*TimelineQueryResult, 
 }
 
 func convertUint8ToStr(u []uint8) string {
+	if len(u) == 0 {
+		return "0"
+	}
 	return fmt.Sprintf("%s", u)
 }
 

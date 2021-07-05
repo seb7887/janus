@@ -40,8 +40,8 @@ func buildSearchQuery(selectClause string, dsName string, whereClause string) st
 	return fmt.Sprintf("SELECT %s FROM %s WHERE %s", selectClause, dsName, whereClause)
 }
 
-func buildSelectClause(granularity string, aggregations []*janusrpc.Aggregation) (string, error) {
-	timeBucket := fmt.Sprintf(`time_bucket('%s', timestamp) as "bucket"`, timeBuckets[granularity])
+func buildSelectClause(granularity string, interval string, aggregations []*janusrpc.Aggregation) (string, error) {
+	timeBucket := fmt.Sprintf(`time_bucket_gapfill('%s', timestamp, NOW() - %s, NOW()) as "bucket"`, timeBuckets[granularity], timeRanges[interval])
 
 	var aggregationExpression string
 	for idx, v := range aggregations {
@@ -164,7 +164,7 @@ func BuildTimelineQuery(req *janusrpc.TimelineQuery) (*string, error) {
 		return nil, err
 	}
 
-	selectClause, err := buildSelectClause(transformedQuery.Granularity, transformedQuery.Aggregations)
+	selectClause, err := buildSelectClause(transformedQuery.Granularity, transformedQuery.Interval, transformedQuery.Aggregations)
 	if err != nil {
 		return nil, err
 	}
