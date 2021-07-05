@@ -35,7 +35,6 @@ message Filter {
   string value = 3;
   string lower = 4;
   string upper = 5;
-  repeated Filter fields = 6;
 }
 
 message Aggregation {
@@ -50,17 +49,17 @@ message OrderBy {
 }
 
 message TimelineQuery {
-  Filter filter = 1;
+  repeated Filter filters = 1;
   string granularity = 2;
   string interval = 3;
-  repeated string dimension = 4;
+  repeated string dimensions = 4;
   repeated Aggregation aggregations = 5;
   OrderBy orderBy = 6;
 }
 
 message TimelineItem {
   string name = 1;
-  int64 count = 2;
+  float count = 2;
 }
 
 message TimelineResponse {

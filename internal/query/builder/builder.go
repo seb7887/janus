@@ -49,7 +49,7 @@ func buildSelectClause(granularity string, aggregations []*janusrpc.Aggregation)
 		if err != nil {
 			return "", err
 		}
-		aggregationExpression = str
+		aggregationExpression = aggregationExpression + str
 		if idx < len(aggregations)-1 {
 			aggregationExpression = aggregationExpression + ", "
 		}
@@ -103,8 +103,59 @@ func buildOrderByClause(orderBy *janusrpc.OrderBy) (string, error) {
 	return fmt.Sprintf("ORDER BY %s %s", orderBy.Dimension, orderBy.Direction), nil
 }
 
-func buildWhereClause(interval string) string {
-	return fmt.Sprintf("timestamp > now() - %s", timeRanges[interval])
+func buildFilter(filter *janusrpc.Filter) (string, error) {
+	res := "AND "
+	filterType := strings.ToUpper(filter.Type)
+	var value string
+	if filter.Dimension == "device_id" || filter.Dimension == "node_id" || filter.Dimension == "device_type" {
+		value = fmt.Sprintf("'%s'", filter.Value)
+	} else {
+		value = filter.Value
+	}
+
+	switch filterType {
+	case "=":
+		res = res + fmt.Sprintf("%s = %s", filter.Dimension, value)
+	case ">":
+		res = res + fmt.Sprintf("%s > %s", filter.Dimension, value)
+	case "<":
+		res = res + fmt.Sprintf("%s < %s", filter.Dimension, value)
+	case ">=":
+		res = res + fmt.Sprintf("%s >= %s", filter.Dimension, value)
+	case "<=":
+		res = res + fmt.Sprintf("%s <= %s", filter.Dimension, value)
+	case "!=":
+		res = res + fmt.Sprintf("%s NOT %s", filter.Dimension, value)
+	case "IN":
+		res = res + fmt.Sprintf("%s IN (%s)", filter.Dimension, value)
+	case "BETWEEN":
+		res = res + fmt.Sprintf("(%s >= %s AND %s <= %s)", filter.Dimension, filter.Lower, filter.Dimension, filter.Upper)
+	default:
+		return "", fmt.Errorf("Invalid filter type %s", filterType)
+	}
+
+	return res, nil
+}
+
+func buildWhereClause(interval string, filters []*janusrpc.Filter) (string, error) {
+	res := fmt.Sprintf("timestamp > now() - %s", timeRanges[interval])
+
+	if len(filters) > 0 {
+		for _, filter := range filters {
+			filterClause, err := buildFilter(filter)
+			if err != nil {
+				return res, err
+			}
+			res = fmt.Sprintf("%s %s", res, filterClause)
+		}
+	}
+
+	return res, nil
+}
+
+func BuildTotalQuery(req *janusrpc.TimelineQuery) (string, error) {
+	whereClause, err := buildWhereClause(strings.ToUpper(req.Interval), req.Filters)
+	return fmt.Sprintf(`SELECT COUNT(*) AS "total" FROM %s WHERE %s`, TELEMETRY_TABLE, whereClause), err
 }
 
 func BuildTimelineQuery(req *janusrpc.TimelineQuery) (*string, error) {
@@ -118,7 +169,11 @@ func BuildTimelineQuery(req *janusrpc.TimelineQuery) (*string, error) {
 		return nil, err
 	}
 
-	whereClause := buildWhereClause(transformedQuery.Interval)
+	whereClause, err := buildWhereClause(transformedQuery.Interval, transformedQuery.Filters)
+	if err != nil {
+		return nil, err
+	}
+
 	groupByClause := buildGroupByClause()
 	orderByClause, err := buildOrderByClause(transformedQuery.OrderBy)
 	if err != nil {
@@ -127,7 +182,7 @@ func BuildTimelineQuery(req *janusrpc.TimelineQuery) (*string, error) {
 
 	whereClause = fmt.Sprintf("%s %s %s", whereClause, groupByClause, orderByClause)
 	searchQuery := buildSearchQuery(selectClause, TELEMETRY_TABLE, whereClause)
-	log.Infof("query: %s", searchQuery)
+	log.Debugf("query: %s", searchQuery)
 	return &searchQuery, nil
 }
 
@@ -145,12 +200,14 @@ func transformTimelineQuery(q *janusrpc.TimelineQuery) (*janusrpc.TimelineQuery,
 
 	var aggregations []*janusrpc.Aggregation
 	if len(q.Aggregations) == 0 {
-		agg := &janusrpc.Aggregation{
-			Type:  "AVG",
-			Field: strings.ToUpper(q.Dimension),
-			Name:  "count",
+		for idx, dimension := range q.Dimensions {
+			agg := &janusrpc.Aggregation{
+				Type:  "AVG",
+				Field: dimension,
+				Name:  fmt.Sprintf("count%d", idx+1),
+			}
+			aggregations = append(aggregations, agg)
 		}
-		aggregations = append(aggregations, agg)
 	} else {
 		aggregations = q.Aggregations
 	}
@@ -161,8 +218,8 @@ func transformTimelineQuery(q *janusrpc.TimelineQuery) (*janusrpc.TimelineQuery,
 	}
 
 	return &janusrpc.TimelineQuery{
-		Filter:       q.Filter,
-		Dimension:    q.Dimension,
+		Filters:      q.Filters,
+		Dimensions:   q.Dimensions,
 		Granularity:  granularity,
 		Interval:     interval,
 		Aggregations: aggregations,

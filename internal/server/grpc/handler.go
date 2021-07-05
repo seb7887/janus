@@ -44,20 +44,18 @@ func (h janusGRPCHandler) GetNodeStates(ctx context.Context, req *janusrpc.Multi
 }
 
 func (h janusGRPCHandler) GetTelemetryTimeline(ctx context.Context, req *janusrpc.TimelineQuery) (*janusrpc.TimelineQueryResponse, error) {
-	err := h.telemetryService.GetTimeline(req)
+	res, err := h.telemetryService.GetTimeline(req)
 	if err != nil {
 		status.Errorf(codes.Internal, err.Error())
 	}
 
-	item := &janusrpc.TimelineItem{
-		Name:  "current",
-		Count: 3,
+	total, err := h.telemetryService.GetTotalSamples(req)
+	if err != nil {
+		status.Errorf(codes.Internal, err.Error())
 	}
-	var items []*janusrpc.TimelineItem
-	items = append(items, item)
 
 	return &janusrpc.TimelineQueryResponse{
-		Items: items,
-		Total: 1,
+		Result: res,
+		Total:  int64(total),
 	}, nil
 }
