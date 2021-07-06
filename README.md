@@ -46,6 +46,7 @@
     - aggregation
     - direction
   - limit int
+- Logs
 
 ## Response Types
 

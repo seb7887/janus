@@ -57,6 +57,31 @@ message TimelineQuery {
   OrderBy orderBy = 6;
 }
 
+message BucketRange {
+  string name = 1;
+  string lower = 2;
+  string upper = 3;
+}
+
+message SegmentQuery {
+  repeated Filter filters = 1;
+  string granularity = 2;
+  string interval = 3;
+  Aggregation aggregation = 4;
+  repeated string dimensions = 5;
+  OrderBy orderBy = 6;
+}
+
+message SegmentedTimelineQuery {
+  repeated Filter filters = 1;
+  string granularity = 2;
+  string interval = 3;
+  string dimension = 4;
+  Aggregation aggregation = 5;
+  repeated string groupBy = 6;
+  repeated BucketRange bucketRanges = 7;
+}
+
 message TimelineItem {
   string name = 1;
   float count = 2;
@@ -72,9 +97,22 @@ message TimelineQueryResponse {
   int64 total = 2;
 }
 
+message SegmentItem {
+  string name = 1;
+  repeated float values = 2;
+  repeated SegmentItem segments = 3;
+}
+
+message SegmentedQueryResponse {
+  repeated SegmentItem segments = 1;
+  int64 total = 2;
+}
+
 service JanusService {
   rpc GetState(SingleStateRequest) returns (StateResponse) {}
   rpc StreamState(SingleStateRequest) returns (stream StateResponse) {}
   rpc GetNodeStates(MultipleStateRequest) returns (MultipleStateResponse) {}
   rpc GetTelemetryTimeline(TimelineQuery) returns (TimelineQueryResponse) {}
+  rpc GetSegmentedTimeline(SegmentedTimelineQuery) returns (TimelineQueryResponse) {}
+  rpc GetSegmentQuery(SegmentQuery) returns (SegmentedQueryResponse) {}
 }

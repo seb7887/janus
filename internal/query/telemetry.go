@@ -7,11 +7,13 @@ import (
 	"github.com/seb7887/janus/internal/query/builder"
 	ts "github.com/seb7887/janus/internal/storage/timescaledb"
 	"github.com/seb7887/janus/janusrpc"
+	log "github.com/sirupsen/logrus"
 )
 
 type QueryServiceTelemetry interface {
 	GetTotalSamples(req *janusrpc.TimelineQuery) (int, error)
 	GetTimeline(req *janusrpc.TimelineQuery) ([]*janusrpc.TimelineResponse, error)
+	GetSegments(req *janusrpc.SegmentQuery) error
 }
 
 type queryServiceTelemetry struct{}
@@ -25,6 +27,7 @@ func (qs *queryServiceTelemetry) GetTotalSamples(req *janusrpc.TimelineQuery) (i
 	if err != nil {
 		return 0, err
 	}
+	log.Debugf("query: %s", sql)
 
 	return ts.ExecuteTMTotalQuery(sql)
 }
@@ -34,6 +37,7 @@ func (qs *queryServiceTelemetry) GetTimeline(req *janusrpc.TimelineQuery) ([]*ja
 	if err != nil {
 		return nil, err
 	}
+	log.Debugf("query: %s", *sql)
 
 	res, err := ts.ExecuteTMTimelineQuery(*sql, len(req.Dimensions))
 	if err != nil {
@@ -89,3 +93,21 @@ func formatTimelineItems(r []*ts.TimelineQueryResult, idx int) ([]*janusrpc.Time
 
 	return items, err
 }
+
+func (qs *queryServiceTelemetry) GetSegments(req *janusrpc.SegmentQuery) error {
+	sql, err := builder.BuildSegmentQuery(req)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	log.Infof("query: %s", *sql)
+
+	_, err := ts.ExecuteTMSegmentQuery(*sql, len(req.Dimensions))
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+// TODO: fix segment query

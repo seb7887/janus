@@ -59,3 +59,24 @@ func (h janusGRPCHandler) GetTelemetryTimeline(ctx context.Context, req *janusrp
 		Total:  int64(total),
 	}, nil
 }
+
+func (h janusGRPCHandler) GetSegmentedTimeline(ctx context.Context, req *janusrpc.SegmentedTimelineQuery) (*janusrpc.TimelineQueryResponse, error) {
+	var res []*janusrpc.TimelineResponse
+	return &janusrpc.TimelineQueryResponse{
+		Result: res,
+		Total:  0,
+	}, nil
+}
+
+func (h janusGRPCHandler) GetSegmentQuery(ctx context.Context, req *janusrpc.SegmentQuery) (*janusrpc.SegmentedQueryResponse, error) {
+	err := h.telemetryService.GetSegments(req)
+	if err != nil {
+		status.Errorf(codes.Internal, err.Error())
+	}
+
+	var res []*janusrpc.SegmentItem
+	return &janusrpc.SegmentedQueryResponse{
+		Segments: res,
+		Total:    0,
+	}, nil
+}

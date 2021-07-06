@@ -11,6 +11,12 @@ type TimelineQueryResult struct {
 	Count2 string
 }
 
+type SegmentQueryResult struct {
+	Dim1 string
+	Dim2 string
+	Count string
+}
+
 func InsertTelemetryEntry(row *Telemetry) error {
 	res := DB.Create(&row)
 	return res.Error
@@ -66,6 +72,41 @@ func ExecuteTMTimelineQuery(sql string, numOfDims int) ([]*TimelineQueryResult, 
 			Bucket: fmt.Sprintf("%d", bucketMillis),
 			Count1: convertUint8ToStr(count1),
 			Count2: convertUint8ToStr(count2),
+		}
+		res = append(res, item)
+	}
+
+	return res, nil
+}
+
+func ExecuteTMSegmentQuery(sql string, numOfDims int) ([]*SegmentQueryResult, error) {
+	rows, err := DB.Raw(sql).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []*SegmentQueryResult
+	for rows.Next() {
+		var (
+			dim1 string
+			dim2 string
+			count []uint8
+		)
+
+		if numOfDims < 2 {
+			err = rows.Scan(&dim1, &count)
+		} else {
+			err = rows.Scan(&dim1, &dim2, &count)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		item := &SegmentQueryResult{
+			Dim1: dim1,
+			Dim2: dim2,
+			Count: convertUint8ToStr(count),
 		}
 		res = append(res, item)
 	}
