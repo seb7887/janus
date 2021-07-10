@@ -11,9 +11,9 @@ import (
 )
 
 type QueryServiceTelemetry interface {
-	GetTotalSamples(req *janusrpc.TimelineQuery) (int, error)
+	GetTotalSamples(interval string, filters []*janusrpc.Filter) (int, error)
 	GetTimeline(req *janusrpc.TimelineQuery) ([]*janusrpc.TimelineResponse, error)
-	GetSegments(req *janusrpc.SegmentQuery) error
+	GetSegments(req *janusrpc.SegmentQuery) ([]*janusrpc.SegmentItem, error)
 }
 
 type queryServiceTelemetry struct{}
@@ -22,8 +22,8 @@ func NewQueryServiceTelemetry() QueryServiceTelemetry {
 	return &queryServiceTelemetry{}
 }
 
-func (qs *queryServiceTelemetry) GetTotalSamples(req *janusrpc.TimelineQuery) (int, error) {
-	sql, err := builder.BuildTotalQuery(req)
+func (qs *queryServiceTelemetry) GetTotalSamples(interval string, filters []*janusrpc.Filter) (int, error) {
+	sql, err := builder.BuildTotalQuery(interval, filters)
 	if err != nil {
 		return 0, err
 	}
@@ -44,9 +44,7 @@ func (qs *queryServiceTelemetry) GetTimeline(req *janusrpc.TimelineQuery) ([]*ja
 		return nil, err
 	}
 
-	formatedResponse, err := formatTimelineResponse(req.Dimensions, res)
-
-	return formatedResponse, err
+	return formatTimelineResponse(req.Dimensions, res)
 }
 
 func formatTimelineResponse(dims []string, r []*ts.TimelineQueryResult) ([]*janusrpc.TimelineResponse, error) {
@@ -75,18 +73,17 @@ func formatTimelineItems(r []*ts.TimelineQueryResult, idx int) ([]*janusrpc.Time
 	for _, v := range r {
 		var count float64
 		if idx == 1 {
-			count, err = strconv.ParseFloat(v.Count1, 64)
+			count, err = roundFloat(v.Count1)
 		} else {
-			count, err = strconv.ParseFloat(v.Count2, 64)
+			count, err = roundFloat(v.Count2)
 		}
 		if err != nil {
 			return nil, err
 		}
-		rounded := math.Round(count*100) / 100
 
 		item := &janusrpc.TimelineItem{
 			Name:  v.Bucket,
-			Count: float32(rounded),
+			Count: float32(count),
 		}
 		items = append(items, item)
 	}
@@ -94,20 +91,85 @@ func formatTimelineItems(r []*ts.TimelineQueryResult, idx int) ([]*janusrpc.Time
 	return items, err
 }
 
-func (qs *queryServiceTelemetry) GetSegments(req *janusrpc.SegmentQuery) error {
+func (qs *queryServiceTelemetry) GetSegments(req *janusrpc.SegmentQuery) ([]*janusrpc.SegmentItem, error) {
 	sql, err := builder.BuildSegmentQuery(req)
 	if err != nil {
 		log.Fatal(err)
-		return err
+		return nil, err
 	}
 	log.Infof("query: %s", *sql)
 
-	_, err := ts.ExecuteTMSegmentQuery(*sql, len(req.Dimensions))
+	res, err := ts.ExecuteTMSegmentQuery(*sql, len(req.Dimensions))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return err
+	return formatSegmentItems(res, len(req.Dimensions))
 }
 
-// TODO: fix segment query
+func formatSegmentItems(r []*ts.SegmentQueryResult, numOfDims int) ([]*janusrpc.SegmentItem, error) {
+	var segmentItems []*janusrpc.SegmentItem
+
+	if numOfDims < 2 {
+		for _, v := range r {
+			value, err := roundFloat(v.Count)
+			if err != nil {
+				return nil, err
+			}
+			item := &janusrpc.SegmentItem{
+				Name:  v.Dim1,
+				Value: float32(value),
+			}
+
+			segmentItems = append(segmentItems, item)
+		}
+	} else {
+		subsegments, err := getSubSegments(r)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range subsegments {
+			item := &janusrpc.SegmentItem{
+				Name:     k,
+				Segments: v,
+			}
+			segmentItems = append(segmentItems, item)
+		}
+	}
+
+	return segmentItems, nil
+}
+
+func getSubSegments(r []*ts.SegmentQueryResult) (map[string][]*janusrpc.SegmentItem, error) {
+	subsegments := make(map[string][]*janusrpc.SegmentItem)
+	var items []*janusrpc.SegmentItem
+
+	for _, v := range r {
+		if _, exists := subsegments[v.Dim1]; exists {
+			items = subsegments[v.Dim1]
+		}
+
+		value, err := roundFloat(v.Count)
+		if err != nil {
+			return nil, err
+		}
+		item := &janusrpc.SegmentItem{
+			Name:  v.Dim2,
+			Value: float32(value),
+		}
+		items = append(items, item)
+		subsegments[v.Dim1] = items
+		// Empty slice
+		items = []*janusrpc.SegmentItem{}
+	}
+
+	return subsegments, nil
+}
+
+func roundFloat(str string) (float64, error) {
+	num, err := strconv.ParseFloat(str, 64)
+	if err != nil {
+		return 0, err
+	}
+	return math.Round(num*100) / 100, nil
+}

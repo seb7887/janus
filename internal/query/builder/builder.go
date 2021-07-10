@@ -152,8 +152,8 @@ func buildWhereClause(interval string, filters []*janusrpc.Filter) (string, erro
 	return res, nil
 }
 
-func BuildTotalQuery(req *janusrpc.TimelineQuery) (string, error) {
-	whereClause, err := buildWhereClause(strings.ToUpper(req.Interval), req.Filters)
+func BuildTotalQuery(interval string, filters []*janusrpc.Filter) (string, error) {
+	whereClause, err := buildWhereClause(strings.ToUpper(interval), filters)
 	return fmt.Sprintf(`SELECT COUNT(*) AS "total" FROM %s WHERE %s`, TELEMETRY_TABLE, whereClause), err
 }
 

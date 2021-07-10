@@ -30,7 +30,7 @@ func buildSegmentedGroupBy(dimensions []string) string {
 	var clause string
 	for idx, dim := range dimensions {
 		clause = clause + dim
-		if idx < len(dimensions) - 1 {
+		if idx < len(dimensions)-1 {
 			clause = clause + ", "
 		}
 	}
@@ -86,17 +86,17 @@ func transformSegmentQuery(q *janusrpc.SegmentQuery) (*janusrpc.SegmentQuery, er
 	}
 
 	aggregation := &janusrpc.Aggregation{
-		Name: q.Aggregation.Name,
+		Name:  q.Aggregation.Name,
 		Field: q.Aggregation.Field,
-		Type: strings.ToUpper(q.Aggregation.Type),
+		Type:  strings.ToUpper(q.Aggregation.Type),
 	}
 
 	return &janusrpc.SegmentQuery{
-		Interval: interval,
+		Interval:    interval,
 		Granularity: granularity,
-		Filters: q.Filters,
-		Dimensions: q.Dimensions,
+		Filters:     q.Filters,
+		Dimensions:  q.Dimensions,
 		Aggregation: aggregation,
-		OrderBy: orderBy,
+		OrderBy:     orderBy,
 	}, nil
 }

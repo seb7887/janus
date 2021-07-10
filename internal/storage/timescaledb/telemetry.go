@@ -12,8 +12,8 @@ type TimelineQueryResult struct {
 }
 
 type SegmentQueryResult struct {
-	Dim1 string
-	Dim2 string
+	Dim1  string
+	Dim2  string
 	Count string
 }
 
@@ -89,8 +89,8 @@ func ExecuteTMSegmentQuery(sql string, numOfDims int) ([]*SegmentQueryResult, er
 	var res []*SegmentQueryResult
 	for rows.Next() {
 		var (
-			dim1 string
-			dim2 string
+			dim1  string
+			dim2  string
 			count []uint8
 		)
 
@@ -104,8 +104,8 @@ func ExecuteTMSegmentQuery(sql string, numOfDims int) ([]*SegmentQueryResult, er
 		}
 
 		item := &SegmentQueryResult{
-			Dim1: dim1,
-			Dim2: dim2,
+			Dim1:  dim1,
+			Dim2:  dim2,
 			Count: convertUint8ToStr(count),
 		}
 		res = append(res, item)

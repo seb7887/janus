@@ -99,7 +99,7 @@ message TimelineQueryResponse {
 
 message SegmentItem {
   string name = 1;
-  repeated float values = 2;
+  float value = 2;
   repeated SegmentItem segments = 3;
 }
 
