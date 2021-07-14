@@ -8,23 +8,23 @@ import (
 )
 
 func BuildTimelineQuery(req *janusrpc.TimelineQuery) (*string, error) {
-	transformedQuery, err := transformTimelineQuery(req)
+	q, err := transformTimelineQuery(req)
 	if err != nil {
 		return nil, err
 	}
 
-	selectClause, err := buildSelectClause(transformedQuery.Granularity, transformedQuery.Interval, transformedQuery.Aggregations)
+	selectClause, err := buildSelectClause(q.Granularity, q.Interval, q.Aggregations)
 	if err != nil {
 		return nil, err
 	}
 
-	whereClause, err := buildWhereClause(transformedQuery.Interval, transformedQuery.Filters)
+	whereClause, err := buildWhereClause(q.Interval, q.Filters)
 	if err != nil {
 		return nil, err
 	}
 
 	groupByClause := buildGroupByClause([]string{})
-	orderByClause, err := buildOrderByClause(transformedQuery.OrderBy)
+	orderByClause, err := buildOrderByClause(q.OrderBy)
 	if err != nil {
 		return nil, err
 	}
@@ -46,14 +46,18 @@ func sanitizeTimeValue(v string) (string, error) {
 
 func transformTimelineQuery(q *janusrpc.TimelineQuery) (*janusrpc.TimelineQuery, error) {
 	// First validate time values
-	interval := strings.ToUpper(q.Interval)
-	if !isValidTimeValue(interval) {
-		return nil, fmt.Errorf("Invalid interval %s", interval)
+	interval, err := sanitizeTimeValue(q.Interval)
+	if err != nil {
+		return nil, err
 	}
 
-	granularity := strings.ToUpper(q.Granularity)
-	if !isValidTimeValue(granularity) {
-		return nil, fmt.Errorf("Invalid granularity %s", granularity)
+	granularity, err := sanitizeTimeValue(q.Granularity)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(q.Dimensions) > 2 {
+		return nil, fmt.Errorf("Invalid number of dimensions")
 	}
 
 	var aggregations []*janusrpc.Aggregation
@@ -85,23 +89,25 @@ func transformTimelineQuery(q *janusrpc.TimelineQuery) (*janusrpc.TimelineQuery,
 	}, nil
 }
 
-/* BUCKET RANGE SEGMENTED TIMELINE QUERY
-// select time_bucket('15 minutes', timestamp) as "bucket",
-case
-	when temperature between 0 and 100 then '100'
-	when temperature between 100 and 200 then '200'
-	else 'nothing'
-end as "range"
-from telemetries t
-where timestamp > now() - interval '1 hour'
-group by bucket, temperature
-order by bucket asc
-*/
+func buildBucketRangeExpression(buckets *janusrpc.SegmentBucket, name string) string {
+	var conditions string
 
-func buildGroupBySelectClause(granularity string, interval string, groupBy []string, aggregation *janusrpc.Aggregation) (string, error) {
+	for _, b := range buckets.BucketRanges {
+		conditions = conditions + fmt.Sprintf("WHEN %s BETWEEN %s AND %s THEN '%s' ", buckets.Dimension, b.Lower, b.Upper, b.Name)
+	}
+	conditions = conditions + "ELSE 'unknown'"
+
+	return fmt.Sprintf(`CASE %s END AS "%s"`, conditions, name)
+}
+
+func buildGroupBySelectClause(granularity string, interval string, groupBy []string, aggregation *janusrpc.Aggregation, buckets *janusrpc.SegmentBucket) (string, error) {
 	timeBucket := buildTimeBucketExpression(granularity, interval)
 
 	var groupByExpression string
+	if len(buckets.BucketRanges) > 0 {
+		groupByExpression = buildBucketRangeExpression(buckets, "segment") + ", "
+	}
+
 	for _, v := range groupBy {
 		groupByExpression = groupByExpression + v + ", "
 	}
@@ -115,24 +121,28 @@ func buildGroupBySelectClause(granularity string, interval string, groupBy []str
 }
 
 func BuildSegmentedTimelineQuery(req *janusrpc.SegmentedTimelineQuery) (*string, error) {
-	transformedQuery, err := transformSegmentedTimelineQuery(req)
+	q, err := transformSegmentedTimelineQuery(req)
 	if err != nil {
 		return nil, err
 	}
 
-	selectClause, err := buildGroupBySelectClause(transformedQuery.Granularity, transformedQuery.Interval, transformedQuery.GroupBy, transformedQuery.Aggregation)
+	selectClause, err := buildGroupBySelectClause(q.Granularity, q.Interval, q.GroupBy, q.Aggregation, q.SegmentBucket)
 	if err != nil {
 		return nil, err
 	}
 
-	whereClause, err := buildWhereClause(transformedQuery.Interval, transformedQuery.Filters)
+	whereClause, err := buildWhereClause(q.Interval, q.Filters)
 	if err != nil {
 		return nil, err
 	}
 
-	groupByClause := buildGroupByClause(transformedQuery.GroupBy)
+	groupBy := q.GroupBy
+	if len(q.SegmentBucket.BucketRanges) > 0 {
+		groupBy = append(groupBy, q.SegmentBucket.Dimension)
+	}
+	groupByClause := buildGroupByClause(groupBy)
 
-	orderByClause, err := buildOrderByClause(transformedQuery.OrderBy)
+	orderByClause, err := buildOrderByClause(q.OrderBy)
 	if err != nil {
 		return nil, err
 	}
@@ -154,6 +164,10 @@ func transformSegmentedTimelineQuery(q *janusrpc.SegmentedTimelineQuery) (*janus
 		return nil, err
 	}
 
+	if len(q.GroupBy) > 2 || (len(q.SegmentBucket.BucketRanges) > 0 && len(q.GroupBy) == 2) {
+		return nil, fmt.Errorf("Invalid number of dimensions")
+	}
+
 	aggregation := &janusrpc.Aggregation{
 		Name:  q.Aggregation.Name,
 		Type:  strings.ToUpper(q.Aggregation.Type),
@@ -166,12 +180,12 @@ func transformSegmentedTimelineQuery(q *janusrpc.SegmentedTimelineQuery) (*janus
 	}
 
 	return &janusrpc.SegmentedTimelineQuery{
-		Filters:      q.Filters,
-		Granularity:  granularity,
-		Interval:     interval,
-		Aggregation:  aggregation,
-		GroupBy:      q.GroupBy,
-		BucketRanges: q.BucketRanges,
-		OrderBy:      orderBy,
+		Filters:       q.Filters,
+		Granularity:   granularity,
+		Interval:      interval,
+		Aggregation:   aggregation,
+		GroupBy:       q.GroupBy,
+		SegmentBucket: q.SegmentBucket,
+		OrderBy:       orderBy,
 	}, nil
 }

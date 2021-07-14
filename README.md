@@ -17,27 +17,4 @@
 
 ## Query Types
 
-- TimelineSegmentsQuery
-  - groupByField
-    - dimension
-    - name
-    - bucketRanges[]
-      - name
-      - lower
-      - upper
-  - orderBys[]
-    - type
-    - dimension
-    - aggregation
-    - direction
-  - limit int
 - Logs
-
-## Response Types
-
-- TimelineSegmentsQuery
-  - items map[string]segment
-    - segment
-      - name
-      - count
-  - total

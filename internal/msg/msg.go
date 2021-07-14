@@ -54,12 +54,13 @@ func GetGeneratorState(id string, state *StateMsg) mongodb.Generator {
 
 type TelemetryMsg struct {
 	DeviceType  string
+	NodeId      string
 	MsgType     string
 	Power       int64
 	Voltage     int64
 	Current     int64
 	Temperature int64
-	Subject     string
+	Severity    string
 	Message     string
 	Timestamp   int64
 }
@@ -68,6 +69,7 @@ func GetTelemetryMsg(id string, msg *TelemetryMsg) ts.Telemetry {
 	return ts.Telemetry{
 		DeviceId:    id,
 		DeviceType:  msg.DeviceType,
+		NodeId:      msg.NodeId,
 		Power:       msg.Power,
 		Voltage:     msg.Voltage,
 		Current:     msg.Current,
@@ -79,7 +81,7 @@ func GetTelemetryMsg(id string, msg *TelemetryMsg) ts.Telemetry {
 func GetLogMsg(id string, msg *TelemetryMsg) ts.Log {
 	return ts.Log{
 		DeviceId:  id,
-		Subject:   msg.Subject,
+		Severity:  msg.Severity,
 		Message:   msg.Message,
 		Timestamp: time.Unix(0, msg.Timestamp*int64(time.Millisecond)),
 	}

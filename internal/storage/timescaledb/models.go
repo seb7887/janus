@@ -7,6 +7,7 @@ import (
 type Telemetry struct {
 	DeviceId    string
 	DeviceType  string
+	NodeId      string
 	Power       int64
 	Voltage     int64
 	Current     int64
@@ -16,7 +17,7 @@ type Telemetry struct {
 
 type Log struct {
 	DeviceId  string
-	Subject   string
+	Severity  string
 	Message   string
 	Timestamp time.Time
 }

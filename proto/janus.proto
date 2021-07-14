@@ -63,6 +63,11 @@ message BucketRange {
   string upper = 3;
 }
 
+message SegmentBucket {
+  string dimension = 1;
+  repeated BucketRange bucketRanges = 2;
+}
+
 message SegmentQuery {
   repeated Filter filters = 1;
   string granularity = 2;
@@ -78,7 +83,7 @@ message SegmentedTimelineQuery {
   string interval = 3;
   Aggregation aggregation = 4;
   repeated string groupBy = 5;
-  repeated BucketRange bucketRanges = 6;
+  SegmentBucket segmentBucket = 6;
   OrderBy orderBy = 7;
 }
 
