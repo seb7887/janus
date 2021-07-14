@@ -39,8 +39,12 @@ func buildSearchQuery(selectClause string, dsName string, whereClause string) st
 	return fmt.Sprintf("SELECT %s FROM %s WHERE %s", selectClause, dsName, whereClause)
 }
 
+func buildTimeBucketExpression(granularity string, interval string) string {
+	return fmt.Sprintf(`time_bucket_gapfill('%s', timestamp, NOW() - %s, NOW()) as "bucket"`, timeBuckets[granularity], timeRanges[interval])
+}
+
 func buildSelectClause(granularity string, interval string, aggregations []*janusrpc.Aggregation) (string, error) {
-	timeBucket := fmt.Sprintf(`time_bucket_gapfill('%s', timestamp, NOW() - %s, NOW()) as "bucket"`, timeBuckets[granularity], timeRanges[interval])
+	timeBucket := buildTimeBucketExpression(granularity, interval)
 
 	var aggregationExpression string
 	for idx, v := range aggregations {
@@ -90,8 +94,15 @@ func buildAggregationsExpression(aggregation *janusrpc.Aggregation) (string, err
 	return fmt.Sprintf(`%s AS "%s"`, res, asName), nil
 }
 
-func buildGroupByClause() string {
-	return "GROUP BY bucket"
+func buildGroupByClause(dimensions []string) string {
+	groupByClause := "GROUP BY bucket"
+	if len(dimensions) > 0 {
+		for _, dim := range dimensions {
+			groupByClause = groupByClause + fmt.Sprintf(", %s", dim)
+		}
+	}
+
+	return groupByClause
 }
 
 func buildOrderByClause(orderBy *janusrpc.OrderBy) (string, error) {
@@ -165,22 +176,3 @@ func isValidTimeValue(str string) bool {
 	}
 	return false
 }
-
-/* SEGMENTED TIMELINE QUERY
-// select time_bucket('15 minutes', "timestamp") as "bucket", device_type, avg(voltage) from telemetries
-where "timestamp" > now() - interval '1 hour'
-group by device_type, bucket
-*/
-
-/* BUCKET RANGE SEGMENTED TIMELINE QUERY
-// select time_bucket('15 minutes', timestamp) as "bucket",
-case
-	when temperature between 0 and 100 then '100'
-	when temperature between 100 and 200 then '200'
-	else 'nothing'
-end as "range"
-from telemetries t
-where timestamp > now() - interval '1 hour'
-group by bucket, temperature
-order by bucket asc
-*/

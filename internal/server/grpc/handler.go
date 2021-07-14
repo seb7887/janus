@@ -61,10 +61,19 @@ func (h janusGRPCHandler) GetTelemetryTimeline(ctx context.Context, req *janusrp
 }
 
 func (h janusGRPCHandler) GetSegmentedTimeline(ctx context.Context, req *janusrpc.SegmentedTimelineQuery) (*janusrpc.TimelineQueryResponse, error) {
-	var res []*janusrpc.TimelineResponse
+	res, err := h.telemetryService.GetTimelineSegments(req)
+	if err != nil {
+		status.Errorf(codes.Internal, err.Error())
+	}
+
+	total, err := h.telemetryService.GetTotalSamples(req.Interval, req.Filters)
+	if err != nil {
+		status.Errorf(codes.Internal, err.Error())
+	}
+
 	return &janusrpc.TimelineQueryResponse{
 		Result: res,
-		Total:  0,
+		Total:  int64(total),
 	}, nil
 }
 

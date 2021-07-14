@@ -76,10 +76,10 @@ message SegmentedTimelineQuery {
   repeated Filter filters = 1;
   string granularity = 2;
   string interval = 3;
-  string dimension = 4;
-  Aggregation aggregation = 5;
-  repeated string groupBy = 6;
-  repeated BucketRange bucketRanges = 7;
+  Aggregation aggregation = 4;
+  repeated string groupBy = 5;
+  repeated BucketRange bucketRanges = 6;
+  OrderBy orderBy = 7;
 }
 
 message TimelineItem {

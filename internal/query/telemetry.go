@@ -1,6 +1,7 @@
 package query
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
@@ -14,6 +15,7 @@ type QueryServiceTelemetry interface {
 	GetTotalSamples(interval string, filters []*janusrpc.Filter) (int, error)
 	GetTimeline(req *janusrpc.TimelineQuery) ([]*janusrpc.TimelineResponse, error)
 	GetSegments(req *janusrpc.SegmentQuery) ([]*janusrpc.SegmentItem, error)
+	GetTimelineSegments(req *janusrpc.SegmentedTimelineQuery) ([]*janusrpc.TimelineResponse, error)
 }
 
 type queryServiceTelemetry struct{}
@@ -164,6 +166,69 @@ func getSubSegments(r []*ts.SegmentQueryResult) (map[string][]*janusrpc.SegmentI
 	}
 
 	return subsegments, nil
+}
+
+func (qs *queryServiceTelemetry) GetTimelineSegments(req *janusrpc.SegmentedTimelineQuery) ([]*janusrpc.TimelineResponse, error) {
+	sql, err := builder.BuildSegmentedTimelineQuery(req)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("query: %s", *sql)
+
+	res, err := ts.ExecuteTMSegmentedTimelineQuery(*sql, len(req.GroupBy))
+	if err != nil {
+		return nil, err
+	}
+
+	return formatSegmentedTimelineResponse(res)
+}
+
+func formatSegmentedTimelineResponse(r []*ts.SegmentedTimelineResult) ([]*janusrpc.TimelineResponse, error) {
+	var res []*janusrpc.TimelineResponse
+	itemsBySegmentation := make(map[string][]*janusrpc.TimelineItem)
+	var items []*janusrpc.TimelineItem
+	var err error
+
+	// First iterate through the array to get all classify items by segmentation
+	for _, v := range r {
+		count, err := roundFloat(v.Count)
+		if err != nil {
+			return nil, err
+		}
+
+		item := &janusrpc.TimelineItem{
+			Name:  v.Bucket,
+			Count: float32(count),
+		}
+
+		var segmentation string
+		if v.Dim2 != "" {
+			segmentation = fmt.Sprintf("%s/%s", v.Dim1, v.Dim2)
+		} else {
+			segmentation = v.Dim1
+		}
+
+		if _, exists := itemsBySegmentation[segmentation]; exists {
+			items = itemsBySegmentation[segmentation]
+		}
+
+		items = append(items, item)
+		itemsBySegmentation[segmentation] = items
+
+		// Empty slice
+		items = []*janusrpc.TimelineItem{}
+	}
+
+	// Iterate through the map to prepare response items
+	for k, v := range itemsBySegmentation {
+		timelineResponse := &janusrpc.TimelineResponse{
+			Dimension: k,
+			Items:     v,
+		}
+		res = append(res, timelineResponse)
+	}
+
+	return res, err
 }
 
 func roundFloat(str string) (float64, error) {

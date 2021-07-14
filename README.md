@@ -17,21 +17,6 @@
 
 ## Query Types
 
-- TimelineQuery
-  - filter
-    - type string
-    - dimension string
-    - value object
-    - values object
-    - lower object
-    - upper object
-    - fields filter[]
-  - granularity string
-  - interval filter
-  - aggregations[]
-    - type string
-    - name string
-    - field string
 - TimelineSegmentsQuery
   - groupByField
     - dimension
@@ -50,11 +35,6 @@
 
 ## Response Types
 
-- TimelineQueryResponse
-  - items map[string]object
-  - name
-  - count
-  - total
 - TimelineSegmentsQuery
   - items map[string]segment
     - segment
