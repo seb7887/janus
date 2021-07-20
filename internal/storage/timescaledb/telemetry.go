@@ -29,7 +29,7 @@ func InsertTelemetryEntry(row *Telemetry) error {
 	return res.Error
 }
 
-func ExecuteTMTotalQuery(sql string) (int, error) {
+func ExecuteTotalQuery(sql string) (int, error) {
 	var total int
 	rows, err := DB.Raw(sql).Rows()
 	if err != nil {

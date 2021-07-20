@@ -12,12 +12,14 @@ import (
 type janusGRPCHandler struct {
 	stateService     query.QueryServiceState
 	telemetryService query.QueryServiceTelemetry
+	logService       query.QueryServiceLog
 }
 
-func NewJanusGRPCServer(stateService query.QueryServiceState, telemetryService query.QueryServiceTelemetry) janusrpc.JanusServiceServer {
+func NewJanusGRPCServer(stateService query.QueryServiceState, telemetryService query.QueryServiceTelemetry, logService query.QueryServiceLog) janusrpc.JanusServiceServer {
 	return &janusGRPCHandler{
 		stateService:     stateService,
 		telemetryService: telemetryService,
+		logService:       logService,
 	}
 }
 
@@ -91,5 +93,22 @@ func (h janusGRPCHandler) GetSegmentQuery(ctx context.Context, req *janusrpc.Seg
 	return &janusrpc.SegmentedQueryResponse{
 		Segments: segmentItems,
 		Total:    int64(total),
+	}, nil
+}
+
+func (h janusGRPCHandler) GetLogs(ctx context.Context, req *janusrpc.LogQuery) (*janusrpc.LogResponse, error) {
+	logs, err := h.logService.GetLogs(req)
+	if err != nil {
+		status.Errorf(codes.Internal, err.Error())
+	}
+
+	total, err := h.logService.GetTotalSamples(req.Interval, req.Filters)
+	if err != nil {
+		status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &janusrpc.LogResponse{
+		Logs:  logs,
+		Total: int64(total),
 	}, nil
 }

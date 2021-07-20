@@ -9,6 +9,7 @@ import (
 
 const (
 	TELEMETRY_TABLE = "telemetries"
+	LOG_TABLE       = "logs"
 )
 
 var (
@@ -147,8 +148,12 @@ func buildFilter(filter *janusrpc.Filter) (string, error) {
 	return res, nil
 }
 
+func buildTimeInterval(interval string) string {
+	return fmt.Sprintf("timestamp > now() - %s", timeRanges[interval])
+}
+
 func buildWhereClause(interval string, filters []*janusrpc.Filter) (string, error) {
-	res := fmt.Sprintf("timestamp > now() - %s", timeRanges[interval])
+	res := buildTimeInterval(interval)
 
 	if len(filters) > 0 {
 		for _, filter := range filters {

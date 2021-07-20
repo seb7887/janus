@@ -31,7 +31,7 @@ func (qs *queryServiceTelemetry) GetTotalSamples(interval string, filters []*jan
 	}
 	log.Debugf("query: %s", sql)
 
-	return ts.ExecuteTMTotalQuery(sql)
+	return ts.ExecuteTotalQuery(sql)
 }
 
 func (qs *queryServiceTelemetry) GetTimeline(req *janusrpc.TimelineQuery) ([]*janusrpc.TimelineResponse, error) {

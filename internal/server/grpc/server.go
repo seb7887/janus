@@ -19,13 +19,15 @@ type grpcServer struct {
 	grpcAddr         string
 	stateService     query.QueryServiceState
 	telemetryService query.QueryServiceTelemetry
+	logService       query.QueryServiceLog
 }
 
-func New(addr string, stateService query.QueryServiceState, telemetryService query.QueryServiceTelemetry) GRPCServer {
+func New(addr string, stateService query.QueryServiceState, telemetryService query.QueryServiceTelemetry, logService query.QueryServiceLog) GRPCServer {
 	return &grpcServer{
 		grpcAddr:         addr,
 		stateService:     stateService,
 		telemetryService: telemetryService,
+		logService:       logService,
 	}
 }
 
@@ -36,7 +38,7 @@ func (s *grpcServer) Serve(ctx context.Context) error {
 	}
 
 	grpcServer := grpc.NewServer(withUnaryInterceptor())
-	serviceServer := NewJanusGRPCServer(s.stateService, s.telemetryService)
+	serviceServer := NewJanusGRPCServer(s.stateService, s.telemetryService, s.logService)
 
 	janusrpc.RegisterJanusServiceServer(grpcServer, serviceServer)
 

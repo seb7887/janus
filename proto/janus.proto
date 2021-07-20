@@ -113,6 +113,30 @@ message SegmentedQueryResponse {
   int64 total = 2;
 }
 
+message LogItem {
+  string deviceId = 1;
+  string severity = 2;
+  string message = 3;
+  int64 timestamp = 4;
+}
+
+message LogFilter {
+  string field = 1;
+  string value = 2;
+}
+
+message LogQuery {
+  repeated LogFilter filters = 1;
+  string interval = 2;
+  int64 limit = 3;
+  int64 offset = 4;
+}
+
+message LogResponse {
+  repeated LogItem logs = 1;
+  int64 total = 2;
+}
+
 service JanusService {
   rpc GetState(SingleStateRequest) returns (StateResponse) {}
   rpc StreamState(SingleStateRequest) returns (stream StateResponse) {}
@@ -120,4 +144,5 @@ service JanusService {
   rpc GetTelemetryTimeline(TimelineQuery) returns (TimelineQueryResponse) {}
   rpc GetSegmentedTimeline(SegmentedTimelineQuery) returns (TimelineQueryResponse) {}
   rpc GetSegmentQuery(SegmentQuery) returns (SegmentedQueryResponse) {}
+  rpc GetLogs(LogQuery) returns (LogResponse) {}
 }
