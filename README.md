@@ -8,13 +8,12 @@
 
 ![diagram](./diagram.png)
 
+## Getting Started
+
+### Environment variables
+
+Create a `.env` file in the root directory based on the `env.sample` file.
+
 ## TODO
 
-- Query service (gRPC Server)
-- Dockerize
-- CI/CD
 - Docs
-
-## Query Types
-
-- Logs
